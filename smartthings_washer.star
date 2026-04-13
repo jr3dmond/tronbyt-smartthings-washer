@@ -3,20 +3,20 @@ SmartThings Washer Status
 Displays the current state of a Samsung washing machine via the SmartThings API.
 """
 
+load("http.star", "http")
 load("render.star", "render")
 load("schema.star", "schema")
-load("http.star", "http")
 load("time.star", "time")
 
 SMARTTHINGS_API = "https://api.smartthings.com/v1"
 CACHE_TTL = 60  # seconds
 
 # Status colors
-COLOR_RUNNING = "#4CAF50"   # green  — machine is active
-COLOR_DONE = "#2196F3"      # blue   — cycle finished
-COLOR_PAUSED = "#FF9800"    # orange — paused
-COLOR_IDLE = "#757575"      # gray   — stopped / idle
-COLOR_ERROR = "#F44336"     # red    — API / parse error
+COLOR_RUNNING = "#4CAF50"  # green  — machine is active
+COLOR_DONE = "#2196F3"  # blue   — cycle finished
+COLOR_PAUSED = "#FF9800"  # orange — paused
+COLOR_IDLE = "#757575"  # gray   — stopped / idle
+COLOR_ERROR = "#F44336"  # red    — API / parse error
 COLOR_WHITE = "#FFFFFF"
 COLOR_DIM = "#9E9E9E"
 
