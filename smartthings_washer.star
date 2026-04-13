@@ -3,6 +3,7 @@ SmartThings Washer Status
 Displays the current state of a Samsung washing machine via the SmartThings API.
 """
 
+load("cache.star", "cache")
 load("http.star", "http")
 load("render.star", "render")
 load("schema.star", "schema")
@@ -10,6 +11,7 @@ load("time.star", "time")
 
 SMARTTHINGS_API = "https://api.smartthings.com/v1"
 CACHE_TTL = 60  # seconds
+DONE_TTL = 1800  # show "Done!" for 30 min after cycle ends
 
 # Status colors
 COLOR_RUNNING = "#4CAF50"  # green  — machine is active
@@ -33,6 +35,32 @@ JOB_STATE_LABELS = {
     "cooling": "Cooling",
     "none": "",
 }
+
+def resolve_display_state(machine_state, job_state, device_id):
+    """Use cached previous state to detect run→stop transitions.
+
+    SmartThings may clear job_state before we poll, so we can't rely on
+    job_state == "finish". Instead we track whether the machine was running
+    and now stopped, and hold a "done" display state for DONE_TTL seconds.
+    """
+    key = "washer_prev_state_" + device_id
+
+    if machine_state == "run":
+        cache.set(key, "run", ttl_seconds = DONE_TTL)
+        return machine_state, job_state
+
+    if machine_state == "stop":
+        prev = cache.get(key)
+        if prev == "run":
+            cache.set(key, "done", ttl_seconds = DONE_TTL)
+            return "done", job_state
+        if prev == "done":
+            # Let the cache expire naturally; don't reset the TTL
+            return "done", job_state
+        cache.set(key, "stop", ttl_seconds = DONE_TTL)
+        return machine_state, job_state
+
+    return machine_state, job_state
 
 def fetch_status(token, device_id):
     """Fetch washer status from SmartThings API with built-in HTTP caching."""
@@ -102,7 +130,9 @@ def state_color(machine_state, job_state):
         return COLOR_RUNNING
     if machine_state == "pause":
         return COLOR_PAUSED
-    if machine_state == "stop" and job_state == "finish":
+    if machine_state in ("done", "stop") and job_state == "finish":
+        return COLOR_DONE
+    if machine_state == "done":
         return COLOR_DONE
     if machine_state == "stop":
         return COLOR_IDLE
@@ -113,7 +143,9 @@ def status_label(machine_state, job_state):
         return JOB_STATE_LABELS.get(job_state, job_state.title()) or "Running"
     if machine_state == "pause":
         return "Paused"
-    if machine_state == "stop" and job_state == "finish":
+    if machine_state in ("done", "stop") and job_state == "finish":
+        return "Done!"
+    if machine_state == "done":
         return "Done!"
     if machine_state == "stop":
         return "Idle"
@@ -151,8 +183,11 @@ def main(config):
     if status == None:
         return render_status("API Error", COLOR_ERROR)
 
-    machine_state = status["machine_state"]
-    job_state = status["job_state"]
+    machine_state, job_state = resolve_display_state(
+        status["machine_state"],
+        status["job_state"],
+        device_id,
+    )
     completion_time = status["completion_time"]
 
     label = status_label(machine_state, job_state)
