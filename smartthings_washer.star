@@ -88,7 +88,7 @@ def minutes_remaining(completion_time_str):
         elif tz_minus != -1:
             ts = ts[:dot] + ts[tz_minus:]
 
-    end = time.parse_time(ts, format = time.RFC3339, location = "UTC")
+    end = time.parse_time(ts, format = "2006-01-02T15:04:05Z07:00", location = "UTC")
     delta = end - time.now()
 
     # delta.minutes is total minutes as a float
