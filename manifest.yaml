@@ -1,0 +1,6 @@
+id: smartthings-washer
+name: SmartThings Washer
+summary: Washing machine status via SmartThings
+desc: Displays the current state of your Samsung washing machine (Idle, Washing, Rinsing, Spinning, Done, etc.) using the SmartThings API. Shows remaining time when a cycle is running.
+author: jredmond
+fileName: smartthings_washer.star
